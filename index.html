@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary & History Tracker</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-bottom: 20px; }
+        h2, h3 { color: #1a73e8; text-align: center; margin-top: 0; }
+        label { display: block; margin: 10px 0 5px; font-weight: bold; font-size: 0.9rem; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+        .allowance-box { background: #e7f3ff; color: #0c5460; padding: 10px; border-radius: 6px; text-align: center; margin: 15px 0; font-weight: bold; border: 1px solid #bee5eb; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.3s; }
+        .btn-calc { background-color: #1a73e8; color: white; margin-bottom: 10px; }
+        .btn-save { background-color: #34a853; color: white; display: none; }
+        .btn-clear { background-color: #ea4335; color: white; width: auto; padding: 5px 15px; font-size: 0.8rem; margin-top: 10px; }
+        .history-container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #f8f9fa; }
+        .grand-total { font-size: 1.2rem; font-weight: bold; text-align: right; margin-top: 15px; color: #202124; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Daily Tracker</h2>
+    
+    <label>Daily Hourly Rate</label>
+    <input type="number" id="rate" placeholder="Enter hourly rate">
+
+    <label>Total Hours Worked Today</label>
+    <input type="number" id="hoursInput" placeholder="Total hours (e.g. 9 or 10)">
+
+    <div class="allowance-box">Meal Allowance: 350 (Display Only)</div>
+
+    <button class="btn-calc" onclick="calculate()">Calculate Daily Pay</button>
+    <button id="saveBtn" class="btn-save" onclick="saveToHistory()">Save to History</button>
+</div>
+
+<div class="history-container">
+    <h3>Work History</h3>
+    <table id="historyTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Hours</th>
+                <th>OT</th>
+                <th>Total Pay</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+    </table>
+    <div class="grand-total">Grand Total: <span id="grandTotal">0.00</span></div>
+    <button class="btn-clear" onclick="clearHistory()">Clear All History</button>
+</div>
+
+<script>
+    let currentCalculation = null;
+
+    // Load history when page opens
+    window.onload = displayHistory;
+
+    function calculate() {
+        const rate = parseFloat(document.getElementById('rate').value);
+        const totalHours = parseInt(document.getElementById('hoursInput').value);
+
+        if (!rate || !totalHours) return alert("Please fill in both fields");
+
+        const paidHours = Math.max(0, totalHours - 1);
+        const regular = Math.min(8, paidHours);
+        const ot = Math.max(0, paidHours - 8);
+        const dailyPay = (regular + ot) * rate;
+
+        currentCalculation = {
+            date: new Date().toLocaleDateString(),
+            hours: totalHours,
+            ot: ot,
+            pay: dailyPay
+        };
+
+        document.getElementById('saveBtn').style.display = 'block';
+        alert(`Calculated Pay: ${dailyPay.toLocaleString()}`);
+    }
+
+    function saveToHistory() {
+        let history = JSON.parse(localStorage.getItem('workHistory')) || [];
+        history.push(currentCalculation);
+        localStorage.setItem('workHistory', JSON.stringify(history));
+        
+        document.getElementById('saveBtn').style.display = 'none';
+        displayHistory();
+    }
+
+    function displayHistory() {
+        const history = JSON.parse(localStorage.getItem('workHistory')) || [];
+        const tbody = document.getElementById('historyBody');
+        let total = 0;
+        
+        tbody.innerHTML = '';
+        history.forEach(entry => {
+            total += entry.pay;
+            const row = `<tr>
+                <td>${entry.date}</td>
+                <td>${entry.hours}</td>
+                <td>${entry.ot}</td>
+                <td>${entry.pay.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+
+        document.getElementById('grandTotal').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+
+    function clearHistory() {
+        if(confirm("Are you sure you want to delete all history?")) {
+            localStorage.removeItem('workHistory');
+            displayHistory();
+        }
+    }
+</script>
+
+</body>
+</html>
